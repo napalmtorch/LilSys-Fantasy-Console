@@ -26,12 +26,7 @@ namespace lilsys
             isa::LD.opcode, 0x01, 0x04, 0x0E,   // ld r1, 0x0E04
             isa::WRRW.opcode, 0x00, 0x01,       // wrrw r0, r1
             isa::ADD.opcode, 0x00, 0x02, 0x00,  // add r0, 2
-            isa::WRRW.opcode, 0x00, 0x01,       // wrrw r0, r1
-            isa::ADD.opcode, 0x00, 0x02, 0x00,  // add r0, 2
-            isa::WRRW.opcode, 0x00, 0x01,       // wrrw r0, r1
-            isa::ADD.opcode, 0x00, 0x02, 0x00,  // add r0, 2
-            isa::WRRW.opcode, 0x00, 0x01,       // wrrw r0, r1
-            isa::HLT.opcode,                    // hlt
+            isa::JMP.opcode, 0x08, 0x00,        // jmp 8
         };
 
         vm = new machine(prog, sizeof(prog));

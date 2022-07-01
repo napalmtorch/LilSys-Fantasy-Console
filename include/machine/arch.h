@@ -7,6 +7,7 @@
 typedef unsigned char  VBYTE;
 typedef unsigned short VWORD;
 typedef unsigned int   VLONG;
+typedef unsigned short VPORT;
 
 #define VID_WIDTH 160
 #define VID_HEIGHT 120
@@ -20,19 +21,28 @@ typedef unsigned int   VLONG;
 #define PORTS_SIZE 0x200
 #define VRAM_SIZE  (VID_WIDTH * VID_HEIGHT)
 
+#define PORT_KB_CMD  0x60
+#define PORT_KB_DATA 0x61
+#define PORT_MS_CMD  0x70
+#define PORT_MS_DATA 0x71
+
 namespace lilsys
 {
     class machine;
 
     enum class register_id : VBYTE { R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, RA, RB, RC, RD, RE, RF, SP, BP, PC, FL, COUNT };
 
-    static inline uint32_t malign(uint32_t num, uint32_t align)
+    struct port_t
     {
-        uint32_t out = num;
-        out &= (0xFFFFFFFF - (align - 1));
-        if (out < num) { out += align; }
-        return out;
-    }
+        public:
+            VPORT id;
+            VWORD address;
+            bool  read_only;
+
+        public:
+            port_t() : id(0), address(0), read_only(false) { }
+            port_t(VPORT id, VWORD addr, bool ro) : id(id), address(addr), read_only(ro) { }
+    };
 
     typedef void (*instr_handler_t)(machine*);
 
@@ -87,11 +97,20 @@ namespace lilsys
         void STW(machine* m);
         void STRB(machine* m);
         void STRW(machine* m);
-
         void WRB(machine* m);
         void WRW(machine* m);
         void WRRB(machine* m);
         void WRRW(machine* m);
+
+        void JMP(machine* m);
+        void JMPR(machine* m);
+        void CALL(machine* m);
+        void CALLR(machine* m);
+        void PUSH(machine* m);
+        void PUSHR(machine* m);
+        void POP(machine* m);
+        void POPR(machine* m);
+        void RET(machine* m);
     }
 
     namespace isa
@@ -132,11 +151,20 @@ namespace lilsys
         static const instr_t STW  = instr_t("STW",  "ww", 0x1B, 5, true, isa_handlers::STW);
         static const instr_t STRB = instr_t("STRB", "wr", 0x1C, 4, true, isa_handlers::STRB);
         static const instr_t STRW = instr_t("STRW", "wr", 0x1D, 4, true, isa_handlers::STRW);
-
         static const instr_t WRB  = instr_t("WRB",  "rb", 0x1E, 3, true, isa_handlers::WRB);
         static const instr_t WRW  = instr_t("WRW",  "rw", 0x1F, 4, true, isa_handlers::WRW);
         static const instr_t WRRB = instr_t("WRRB", "rr", 0x20, 3, true, isa_handlers::WRRB);
         static const instr_t WRRW = instr_t("WRRW", "rr", 0x21, 3, true, isa_handlers::WRRW);
+
+        static const instr_t JMP   = instr_t("JMP",   "w", 0x22, 3, false, isa_handlers::JMP);
+        static const instr_t JMPR  = instr_t("JMPR",  "r", 0x23, 2, false, isa_handlers::JMPR);
+        static const instr_t CALL  = instr_t("CALL",  "w", 0x24, 3, false, isa_handlers::CALL);
+        static const instr_t CALLR = instr_t("CALLR", "r", 0x25, 2, false, isa_handlers::CALLR);
+        static const instr_t PUSH  = instr_t("PUSH",  "w", 0x26, 3, true,  isa_handlers::PUSH);
+        static const instr_t PUSHR = instr_t("PUSHR", "r", 0x27, 2, true,  isa_handlers::PUSHR);
+        static const instr_t POP   = instr_t("POP",   "",  0x28, 1, true,  isa_handlers::POP);
+        static const instr_t POPR  = instr_t("POPR",  "r", 0x29, 2, true,  isa_handlers::POPR);
+        static const instr_t RET   = instr_t("RET",   "",  0x2A, 1, false, isa_handlers::RET);
 
         static const instr_t* instructions[] = 
         {
@@ -181,7 +209,61 @@ namespace lilsys
             &WRRB,
             &WRRW,
 
+            &JMP,
+            &JMPR,
+            &CALL,
+            &CALLR,
+            &PUSH,
+            &PUSHR,
+            &POP,
+            &POPR,
+            &RET,
         };
         static const size_t COUNT = sizeof(instructions) / sizeof(instr_t*);
+
+        static inline const instr_t* get_byop(VBYTE op)
+        {
+            for (size_t i = 0; i < COUNT; i++)
+            {
+                if (instructions[i]->opcode == op) { return instructions[i]; }
+            }
+            return NULL;
+        }
+    }
+
+    static inline uint32_t malign(uint32_t num, uint32_t align)
+    {
+        uint32_t out = num;
+        out &= (0xFFFFFFFF - (align - 1));
+        if (out < num) { out += align; }
+        return out;
+    }
+
+    static inline const char* regname(VBYTE reg)
+    {
+        switch (reg)
+        {
+            case 0x00: { return "R0"; }
+            case 0x01: { return "R1"; }
+            case 0x02: { return "R2"; }
+            case 0x03: { return "R3"; }
+            case 0x04: { return "R4"; }
+            case 0x05: { return "R5"; }
+            case 0x06: { return "R6"; }
+            case 0x07: { return "R7"; }
+            case 0x08: { return "R8"; }
+            case 0x09: { return "R9"; }
+            case 0x0A: { return "RA"; }
+            case 0x0B: { return "RB"; }
+            case 0x0C: { return "RC"; }
+            case 0x0D: { return "RD"; }
+            case 0x0E: { return "RE"; }
+            case 0x0F: { return "RF"; }
+            case 0x10: { return "SP"; }
+            case 0x11: { return "BP"; }
+            case 0x12: { return "PC"; }
+            case 0x13: { return "FL"; }
+        }
+        return "\0";
     }
 }

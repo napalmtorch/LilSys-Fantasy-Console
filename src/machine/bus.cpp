@@ -15,7 +15,7 @@ namespace lilsys
         // ports
         devices[DEV_PORTS] = bus_device(BUS_SIZE - PORTS_SIZE, PORTS_SIZE, false);
         devices[DEV_VRAM]  = bus_device(devices[DEV_PORTS].address - VRAM_SIZE, VRAM_SIZE, false);
-        devices[DEV_ROM]   = bus_device(0, 0, false);
+        devices[DEV_ROM]   = bus_device(0, 0, true);
         devices[DEV_RAM]   = bus_device(0, devices[DEV_VRAM].address, false);
 
         // finished
@@ -26,14 +26,14 @@ namespace lilsys
 
     void bus_controller::fill(VWORD addr, VBYTE value, VLONG size)
     {
-        if (addr + size >= BUS_SIZE) { printf("%s Memory fill out of bounds\n", DEBUG_ERROR); exit(0); }
+        if (addr + size >= BUS_SIZE) { printf("%s Memory fill out of bounds\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
         memset(&_data[addr], value, size);
     }
 
     void bus_controller::wrb(VWORD addr, VBYTE val)
     {
-        if (addr >= BUS_SIZE) { printf("%s Memory write out of bounds\n", DEBUG_ERROR); exit(0); }
-        if (!can_write(addr)) { printf("%s Memory write to read-only region\n", DEBUG_ERROR); exit(0); }
+        if (addr >= BUS_SIZE) { printf("%s Memory write out of bounds\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
+        if (!can_write(addr)) { printf("%s Memory write to read-only region\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
         _data[addr] = val;
     }
 
@@ -53,7 +53,7 @@ namespace lilsys
 
     void bus_controller::wr(VWORD addr, void* data, VLONG size)
     {
-        if (addr + size > BUS_SIZE) { printf("%s Memory write out of bounds\n", DEBUG_ERROR); exit(0); }
+        if (addr + size > BUS_SIZE) { printf("%s Memory write out of bounds\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
         memcpy(_data, data, size);
     }
 
@@ -61,7 +61,7 @@ namespace lilsys
 
     VBYTE bus_controller::rdb(VWORD addr)
     {
-        if (addr >= BUS_SIZE) { printf("%s Memory 8-bit read out of bounds\n", DEBUG_ERROR); exit(0); }
+        if (addr >= BUS_SIZE) { printf("%s Memory 8-bit read out of bounds\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
         return _data[addr];
     }
 
@@ -77,8 +77,8 @@ namespace lilsys
 
     void bus_controller::rd(VWORD addr, void* dest, VLONG size)
     {
-        if (addr + size > BUS_SIZE) { printf("%s Memory read out of bounds\n", DEBUG_ERROR); exit(0); }
-        if (dest == NULL) { printf("%s Tried to read from bus into null array\n", DEBUG_ERROR); exit(0); }
+        if (addr + size > BUS_SIZE) { printf("%s Memory read out of bounds\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
+        if (dest == NULL) { printf("%s Tried to read from bus into null array\n", DEBUG_ERROR); host->cpu.print_state(); exit(0); }
         memcpy(dest, &_data[addr], size);
     }
 

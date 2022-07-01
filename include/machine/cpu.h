@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <vector>
 #include "machine/arch.h"
 
 namespace lilsys
@@ -9,8 +10,9 @@ namespace lilsys
     class processing_unit
     {
         public:
-            machine* host;
-            VWORD    registers[(int)register_id::COUNT];
+            machine*            host;
+            VWORD               registers[(int)register_id::COUNT];
+            std::vector<port_t> ports;
 
         private:
             bool _halted;
@@ -26,6 +28,10 @@ namespace lilsys
             void step();
             void set_flags(register_id reg, bool neg);
             void set_flags(register_id reg);
+
+        public:
+            void  stack_push(VWORD value);
+            VWORD stack_pop();
 
         public:
             void  reg_wr(register_id reg, VWORD value);

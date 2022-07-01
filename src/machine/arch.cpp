@@ -2,6 +2,8 @@
 #include "machine/machine.h"
 #include "machine/cpu.h"
 
+#define _SP (int)lilsys::register_id::SP
+#define _BP (int)lilsys::register_id::BP
 #define _PC (int)lilsys::register_id::PC
 #define _FL (int)lilsys::register_id::FL
 
@@ -241,6 +243,60 @@ namespace lilsys
             register_id rx = m->bus.rdr(m->cpu.registers[_PC] + 1);
             register_id ry = m->bus.rdr(m->cpu.registers[_PC] + 2);
             m->bus.wrw(m->cpu.reg_rd(rx), m->cpu.reg_rd(ry));
+        }
+
+        void JMP(machine* m)
+        {
+            VWORD a = m->bus.rdw(m->cpu.registers[_PC] + 1);
+            m->cpu.registers[_PC] = a;
+        }
+
+        void JMPR(machine* m)
+        {
+            register_id r = m->bus.rdr(m->cpu.registers[_PC] + 1);
+            m->cpu.registers[_PC] = m->cpu.reg_rd(r);
+        }
+
+        void CALL(machine* m)
+        {
+            VWORD a = m->bus.rdw(m->cpu.registers[_PC] + 1);
+            m->cpu.stack_push(m->cpu.registers[_PC]);
+            m->cpu.registers[_PC] = a;
+        }
+
+        void CALLR(machine* m)
+        {
+            register_id r = m->bus.rdr(m->cpu.registers[_PC] + 1);
+            m->cpu.stack_push(m->cpu.registers[_PC]);
+            m->cpu.registers[_PC] = m->cpu.reg_rd(r);
+        }
+
+        void PUSH(machine* m)
+        {
+            VWORD v = m->bus.rdw(m->cpu.registers[_PC] + 1);
+            m->cpu.stack_push(v);
+        }
+
+        void PUSHR(machine* m)
+        {
+            register_id r = m->bus.rdr(m->cpu.registers[_PC] + 1);
+            m->cpu.stack_push(m->cpu.reg_rd(r));
+        }
+
+        void POP(machine* m)
+        {
+            m->cpu.registers[_SP] += 2;
+        }
+
+        void POPR(machine* m)
+        {
+            register_id r = m->bus.rdr(m->cpu.registers[_PC] + 1);
+            m->cpu.reg_wr(r, m->cpu.stack_pop());
+        }
+
+        void RET(machine* m)
+        {
+            m->cpu.registers[_PC] = m->cpu.stack_pop() + isa::RET.bytes;
         }
     }
 }

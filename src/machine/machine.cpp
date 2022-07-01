@@ -23,6 +23,9 @@ namespace lilsys
         printf("%s RAM           Address:0x%04X-0x%04X  RW:%u\n", DEBUG_INFO, bus.devices[DEV_RAM].address,   bus.devices[DEV_RAM].address   + bus.devices[DEV_RAM].size,   bus.devices[DEV_RAM].read_only ? 0 : 1);
         printf("%s VRAM          Address:0x%04X-0x%04X  RW:%u\n", DEBUG_INFO, bus.devices[DEV_VRAM].address,  bus.devices[DEV_VRAM].address  + bus.devices[DEV_VRAM].size,  bus.devices[DEV_VRAM].read_only ? 0 : 1);
         printf("%s PORTS         Address:0x%04X-0x%04X RW:%u\n", DEBUG_INFO, bus.devices[DEV_PORTS].address, bus.devices[DEV_PORTS].address + bus.devices[DEV_PORTS].size, bus.devices[DEV_PORTS].read_only ? 0 : 1);
+
+        printf("%s Showing list of ports\n", DEBUG_INFO);
+        for (size_t i = 0; i < cpu.ports.size(); i++) { printf("%s - Port:0x%04X Address:0x%04X RW:%u\n", DEBUG_INFO, cpu.ports[i].id, cpu.ports[i].address, cpu.ports[i].read_only ? 0 : 1); }
     }
 
     machine::machine(const char* fname)
